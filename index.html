@@ -10,16 +10,13 @@
 <meta name="theme-color" content="#4a90e2">
 
 <style>
-
 body{
     font-family:sans-serif;
     background:#f5f5f5;
     margin:20px;
 }
 
-h1{
-    text-align:center;
-}
+h1{text-align:center;}
 
 .form{
     background:white;
@@ -28,8 +25,7 @@ h1{
     margin-bottom:20px;
 }
 
-input,
-textarea{
+input,textarea{
     width:100%;
     padding:10px;
     margin:5px 0;
@@ -37,16 +33,14 @@ textarea{
 }
 
 button{
-    width:100%;
-    padding:10px;
+    padding:8px;
     margin-top:8px;
     cursor:pointer;
 }
 
 .grid{
     display:grid;
-    grid-template-columns:
-    repeat(auto-fill,minmax(180px,1fr));
+    grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
     gap:15px;
 }
 
@@ -63,13 +57,7 @@ button{
     object-fit:cover;
 }
 
-.card-body{
-    padding:10px;
-}
-
-.tags{
-    margin-top:5px;
-}
+.card-body{padding:10px;}
 
 .tag{
     display:inline-block;
@@ -78,18 +66,35 @@ button{
     padding:4px 8px;
     border-radius:999px;
     margin:2px;
-    cursor:pointer;
     font-size:12px;
+    cursor:pointer;
 }
 
-.tag:hover{
-    opacity:0.8;
+#pagination{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    margin:15px;
 }
 
-#search{
-    margin-bottom:10px;
+/* 🔧 モーダル（編集画面） */
+.modal{
+    display:none;
+    position:fixed;
+    top:0;left:0;
+    width:100%;height:100%;
+    background:rgba(0,0,0,0.5);
+    justify-content:center;
+    align-items:center;
 }
 
+.modal-content{
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    width:90%;
+    max-width:400px;
+}
 </style>
 </head>
 
@@ -98,179 +103,205 @@ button{
 <h1>💎 宝石図鑑</h1>
 
 <div class="form">
-
-<input
-type="file"
-id="photo"
-accept="image/*">
-
-<input
-type="text"
-id="name"
-placeholder="宝石名">
-
-<input
-type="text"
-id="tags"
-placeholder="タグ（例:赤色,コランダム,誕生石）">
-
-<textarea
-id="memo"
-placeholder="メモ"></textarea>
-
-<button onclick="saveGem()">
-登録
-</button>
-
+<input type="file" id="photo" accept="image/*">
+<input type="text" id="name" placeholder="宝石名">
+<input type="text" id="tags" placeholder="タグ（カンマ区切り）">
+<textarea id="memo" placeholder="メモ"></textarea>
+<button onclick="saveGem()">登録</button>
 </div>
 
-<input
-type="text"
-id="search"
-placeholder="宝石名・タグ検索"
-oninput="render()">
+<input type="text" id="search" placeholder="検索" oninput="render()">
 
-<button onclick="clearTagFilter()">
-タグ絞り込み解除
-</button>
+<button onclick="clearTagFilter()">タグ解除</button>
 
 <div id="gallery" class="grid"></div>
 
+<div id="pagination">
+<button onclick="prevPage()">← 前</button>
+<span id="pageInfo"></span>
+<button onclick="nextPage()">次 →</button>
+</div>
+
+<!-- 🔧 編集モーダル -->
+<div id="modal" class="modal">
+<div class="modal-content">
+
+<h3>編集</h3>
+
+<input id="editName" placeholder="名前">
+<input id="editTags" placeholder="タグ">
+<textarea id="editMemo"></textarea>
+
+<button onclick="saveEdit()">保存</button>
+<button onclick="closeModal()">キャンセル</button>
+
+</div>
+</div>
+
 <script>
 
-let gems =
-JSON.parse(
-localStorage.getItem("gems")
-) || [];
+let gems = JSON.parse(localStorage.getItem("gems")) || [];
 
 let currentTag = "";
+let currentPage = 1;
+const pageSize = 12;
+
+let editIndex = null;
+
+/* ---------------- 登録 ---------------- */
 
 function saveGem(){
 
-    const file =
-    document.getElementById("photo").files[0];
-
-    const name =
-    document.getElementById("name").value;
-
-    const tags =
-    document.getElementById("tags").value;
-
-    const memo =
-    document.getElementById("memo").value;
+    const file = document.getElementById("photo").files[0];
+    const name = document.getElementById("name").value;
+    const tags = document.getElementById("tags").value;
+    const memo = document.getElementById("memo").value;
 
     if(!file || !name){
-
-        alert(
-        "写真と宝石名を入力してください"
-        );
-
+        alert("写真と名前必須");
         return;
     }
 
-    const reader =
-    new FileReader();
+    const reader = new FileReader();
+
     reader.onload = function(e){
 
         gems.push({
-
             image:e.target.result,
-            name:name,
-            tags:tags,
-            memo:memo
-
+            name,
+            tags,
+            memo
         });
 
-        localStorage.setItem(
-            "gems",
-            JSON.stringify(gems)
-        );
-
-        document.getElementById("photo").value="";
-        document.getElementById("name").value="";
-        document.getElementById("tags").value="";
-        document.getElementById("memo").value="";
-
+        localStorage.setItem("gems",JSON.stringify(gems));
         render();
     };
 
     reader.readAsDataURL(file);
 }
 
+/* ---------------- フィルタ ---------------- */
+
 function filterByTag(tag){
-
     currentTag = tag;
-
+    currentPage = 1;
     render();
 }
 
 function clearTagFilter(){
-
     currentTag = "";
-
+    currentPage = 1;
     render();
 }
 
+/* ---------------- 削除 ---------------- */
+
 function deleteGem(index){
 
-    if(confirm("削除しますか？")){
-
+    if(confirm("削除する？")){
         gems.splice(index,1);
-
-        localStorage.setItem(
-            "gems",
-            JSON.stringify(gems)
-        );
-
+        localStorage.setItem("gems",JSON.stringify(gems));
         render();
     }
 }
 
-function render(){
+/* ---------------- 編集 ---------------- */
+
+function openEdit(index){
+
+    editIndex = index;
+
+    const g = gems[index];
+
+    document.getElementById("editName").value = g.name;
+    document.getElementById("editTags").value = g.tags;
+    document.getElementById("editMemo").value = g.memo;
+
+    document.getElementById("modal").style.display = "flex";
+}
+
+function closeModal(){
+    document.getElementById("modal").style.display = "none";
+    editIndex = null;
+}
+
+function saveEdit(){
+
+    if(editIndex === null) return;
+
+    gems[editIndex].name =
+        document.getElementById("editName").value;
+
+    gems[editIndex].tags =
+        document.getElementById("editTags").value;
+
+    gems[editIndex].memo =
+        document.getElementById("editMemo").value;
+
+    localStorage.setItem("gems",JSON.stringify(gems));
+
+    closeModal();
+    render();
+}
+
+/* ---------------- ページ ---------------- */
+
+function nextPage(){
+    const max = Math.ceil(getFiltered().length / pageSize);
+    if(currentPage < max){
+        currentPage++;
+        render();
+    }
+}
+
+function prevPage(){
+    if(currentPage > 1){
+        currentPage--;
+        render();
+    }
+}
+
+/* ---------------- フィルタ ---------------- */
+
+function getFiltered(){
 
     const keyword =
-    document
-    .getElementById("search")
-    .value
-    .toLowerCase();
+        document.getElementById("search")
+        .value.toLowerCase();
 
-    const gallery =
-    document.getElementById("gallery");
-
-    gallery.innerHTML = "";
-
-    gems
-    .filter(g => {
+    return gems.filter(g => {
 
         const keywordMatch =
-
-            g.name.toLowerCase()
-            .includes(keyword)
-
-            ||
-
-            g.tags.toLowerCase()
-            .includes(keyword);
+            g.name.toLowerCase().includes(keyword) ||
+            g.tags.toLowerCase().includes(keyword);
 
         const tagMatch =
-
-            currentTag === ""
-
-            ||
-
-            g.tags
-            .split(",")
-            .map(t => t.trim())
+            currentTag === "" ||
+            g.tags.split(",")
+            .map(t=>t.trim())
             .includes(currentTag);
 
         return keywordMatch && tagMatch;
+    });
+}
 
-    })
+/* ---------------- 描画 ---------------- */
 
-    .forEach((g,index)=>{
+function render(){
+
+    const gallery = document.getElementById("gallery");
+    gallery.innerHTML = "";
+
+    const filtered = getFiltered();
+
+    const start = (currentPage - 1) * pageSize;
+    const pageItems = filtered.slice(start,start + pageSize);
+
+    pageItems.forEach(g => {
+
+        const index = gems.indexOf(g);
 
         gallery.innerHTML += `
-
         <div class="card">
 
             <img src="${g.image}">
@@ -279,57 +310,42 @@ function render(){
 
                 <h3>${g.name}</h3>
 
-                <div class="tags">
-
-                ${g.tags
-                .split(",")
-                .map(tag =>
-
-                `<span
-                class="tag"
-                onclick="filterByTag('${tag.trim()}')">
-
-                #${tag.trim()}
-
-                </span>`
-
-                )
-                .join(" ")}
-
+                <div>
+                ${g.tags.split(",").map(tag=>
+                    `<span class="tag"
+                    onclick="filterByTag('${tag.trim()}')">
+                    #${tag.trim()}
+                    </span>`
+                ).join("")}
                 </div>
 
                 <p>${g.memo}</p>
 
-                <button
-                onclick="deleteGem(${index})">
+                <button onclick="openEdit(${index})">
+                編集
+                </button>
 
+                <button onclick="deleteGem(${index})">
                 削除
-
                 </button>
 
             </div>
-
         </div>
-
         `;
-
     });
 
+    const maxPage = Math.ceil(filtered.length / pageSize);
+
+    document.getElementById("pageInfo").textContent =
+        `${currentPage} / ${maxPage || 1}`;
 }
 
 render();
 
+/* ---------------- PWA ---------------- */
+
 if("serviceWorker" in navigator){
-
-    navigator.serviceWorker
-    .register("service-worker.js")
-    .then(() =>
-        console.log(
-        "Service Worker 登録成功"
-        )
-    )
-    .catch(console.error);
-
+    navigator.serviceWorker.register("service-worker.js");
 }
 
 </script>
