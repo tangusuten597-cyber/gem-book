@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>宝石図鑑</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4a90e2">
+
+<style>
+
+body{
+    font-family:sans-serif;
+    background:#f5f5f5;
+    margin:20px;
+}
+
+h1{
+    text-align:center;
+}
+
+.form{
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    margin-bottom:20px;
+}
+
+input,
+textarea{
+    width:100%;
+    padding:10px;
+    margin:5px 0;
+    box-sizing:border-box;
+}
+
+button{
+    width:100%;
+    padding:10px;
+    margin-top:8px;
+    cursor:pointer;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:
+    repeat(auto-fill,minmax(180px,1fr));
+    gap:15px;
+}
+
+.card{
+    background:white;
+    border-radius:10px;
+    overflow:hidden;
+    box-shadow:0 2px 5px rgba(0,0,0,.2);
+}
+
+.card img{
+    width:100%;
+    height:150px;
+    object-fit:cover;
+}
+
+.card-body{
+    padding:10px;
+}
+
+.tags{
+    margin-top:5px;
+}
+
+.tag{
+    display:inline-block;
+    background:#4a90e2;
+    color:white;
+    padding:4px 8px;
+    border-radius:999px;
+    margin:2px;
+    cursor:pointer;
+    font-size:12px;
+}
+
+.tag:hover{
+    opacity:0.8;
+}
+
+#search{
+    margin-bottom:10px;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>💎 宝石図鑑</h1>
+
+<div class="form">
+
+<input
+type="file"
+id="photo"
+accept="image/*">
+
+<input
+type="text"
+id="name"
+placeholder="宝石名">
+
+<input
+type="text"
+id="tags"
+placeholder="タグ（例:赤色,コランダム,誕生石）">
+
+<textarea
+id="memo"
+placeholder="メモ"></textarea>
+
+<button onclick="saveGem()">
+登録
+</button>
+
+</div>
+
+<input
+type="text"
+id="search"
+placeholder="宝石名・タグ検索"
+oninput="render()">
+
+<button onclick="clearTagFilter()">
+タグ絞り込み解除
+</button>
+
+<div id="gallery" class="grid"></div>
+
+<script>
+
+let gems =
+JSON.parse(
+localStorage.getItem("gems")
+) || [];
+
+let currentTag = "";
+
+function saveGem(){
+
+    const file =
+    document.getElementById("photo").files[0];
+
+    const name =
+    document.getElementById("name").value;
+
+    const tags =
+    document.getElementById("tags").value;
+
+    const memo =
+    document.getElementById("memo").value;
+
+    if(!file || !name){
+
+        alert(
+        "写真と宝石名を入力してください"
+        );
+
+        return;
+    }
+
+    const reader =
+    new FileReader();
+    reader.onload = function(e){
+
+        gems.push({
+
+            image:e.target.result,
+            name:name,
+            tags:tags,
+            memo:memo
+
+        });
+
+        localStorage.setItem(
+            "gems",
+            JSON.stringify(gems)
+        );
+
+        document.getElementById("photo").value="";
+        document.getElementById("name").value="";
+        document.getElementById("tags").value="";
+        document.getElementById("memo").value="";
+
+        render();
+    };
+
+    reader.readAsDataURL(file);
+}
+
+function filterByTag(tag){
+
+    currentTag = tag;
+
+    render();
+}
+
+function clearTagFilter(){
+
+    currentTag = "";
+
+    render();
+}
+
+function deleteGem(index){
+
+    if(confirm("削除しますか？")){
+
+        gems.splice(index,1);
+
+        localStorage.setItem(
+            "gems",
+            JSON.stringify(gems)
+        );
+
+        render();
+    }
+}
+
+function render(){
+
+    const keyword =
+    document
+    .getElementById("search")
+    .value
+    .toLowerCase();
+
+    const gallery =
+    document.getElementById("gallery");
+
+    gallery.innerHTML = "";
+
+    gems
+    .filter(g => {
+
+        const keywordMatch =
+
+            g.name.toLowerCase()
+            .includes(keyword)
+
+            ||
+
+            g.tags.toLowerCase()
+            .includes(keyword);
+
+        const tagMatch =
+
+            currentTag === ""
+
+            ||
+
+            g.tags
+            .split(",")
+            .map(t => t.trim())
+            .includes(currentTag);
+
+        return keywordMatch && tagMatch;
+
+    })
+
+    .forEach((g,index)=>{
+
+        gallery.innerHTML += `
+
+        <div class="card">
+
+            <img src="${g.image}">
+
+            <div class="card-body">
+
+                <h3>${g.name}</h3>
+
+                <div class="tags">
+
+                ${g.tags
+                .split(",")
+                .map(tag =>
+
+                `<span
+                class="tag"
+                onclick="filterByTag('${tag.trim()}')">
+
+                #${tag.trim()}
+
+                </span>`
+
+                )
+                .join(" ")}
+
+                </div>
+
+                <p>${g.memo}</p>
+
+                <button
+                onclick="deleteGem(${index})">
+
+                削除
+
+                </button>
+
+            </div>
+
+        </div>
+
+        `;
+
+    });
+
+}
+
+render();
+
+if("serviceWorker" in navigator){
+
+    navigator.serviceWorker
+    .register("service-worker.js")
+    .then(() =>
+        console.log(
+        "Service Worker 登録成功"
+        )
+    )
+    .catch(console.error);
+
+}
+
+</script>
+
+</body>
+</html>
