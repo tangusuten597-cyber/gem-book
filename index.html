@@ -13,8 +13,11 @@ body{
     margin:20px;
 }
 
-h1{text-align:center;}
+h1{
+    text-align:center;
+}
 
+/* 入力 */
 .form{
     background:white;
     padding:15px;
@@ -22,108 +25,102 @@ h1{text-align:center;}
     margin-bottom:20px;
 }
 
-input,textarea{
+input{
     width:100%;
     padding:10px;
     margin:5px 0;
     box-sizing:border-box;
 }
 
-button {
-    padding: 4px 6px;
-    font-size: 10px;
-    margin-top: 4px;
-    cursor: pointer;
+/* グリッド */
+.grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:6px;
+    align-items:stretch;
 }
 
-/* =========================
-   GRID（ズレ防止の核心）
-========================= */
-.grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-    padding: 4px;
+/* カード（重要：固定構造） */
+.card{
+    background:white;
+    border-radius:8px;
+    box-shadow:0 1px 3px rgba(0,0,0,.15);
 
-    align-items: stretch; /* ←これ超重要 */
+    display:flex;
+    flex-direction:column;
+
+    height:190px; /* ←安定の核 */
+    overflow:hidden;
 }
 
-/* =========================
-   CARD（高さ固定）
-========================= */
-.card {
-    background: white;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0,0,0,.15);
-
-    display: flex;
-    flex-direction: column;
-
-    height: 180px; /* ←固定（ズレ防止の本体） */
+/* 画像 */
+.card img{
+    width:100%;
+    height:80px;
+    object-fit:cover;
 }
 
-/* 画像固定 */
-.card img {
-    width: 100%;
-    height: 80px;
-    object-fit: cover;
+/* 名前 */
+.card h3{
+    font-size:12px;
+    margin:4px;
+    line-height:1.2;
+
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+
+    min-height:2.4em;
 }
 
-/* 名前（2行まで） */
-.card h3 {
-    font-size: 12px;
-    line-height: 1.2;
-    margin: 4px;
-
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-
-    min-height: 2.4em;
+/* 中身 */
+.card-body{
+    padding:4px;
+    display:flex;
+    flex-direction:column;
+    flex:1;
 }
 
-/* 中身エリア */
-.card-body {
-    padding: 4px;
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    overflow: hidden;
+/* ===== タグ専用“固定枠” ===== */
+.tag-area{
+    min-height:50px; /* ←ここが「空白スペース」 */
+    padding:4px;
+
+    display:flex;
+    flex-wrap:wrap;
+    gap:2px;
+
+    align-content:flex-start;
 }
 
-/* ボタンは下固定 */
-.card button {
-    margin-top: auto;
+/* タグ */
+.tag{
+    display:inline-block;
+    background:#4a90e2;
+    color:white;
+    padding:2px 6px;
+    border-radius:999px;
+    font-size:11px;
+    white-space:nowrap;
 }
 
-/* =========================
-   TAG（暴れ防止）
-========================= */
-.tag {
-    display: inline-block;
-    background: #4a90e2;
-    color: white;
-    padding: 2px 6px;
-    border-radius: 999px;
-    margin: 2px;
-    font-size: 11px;
-    cursor: pointer;
-
-    white-space: nowrap;
+/* ボタン固定エリア */
+.button-area{
+    margin-top:auto;
+    display:flex;
+    gap:4px;
+    padding:4px;
 }
 
-.tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2px;
-
-    min-height: 36px; /* ←ここで安定化 */
-    overflow: hidden; /* ←はみ出し防止 */
+/* ボタン */
+button{
+    padding:4px 6px;
+    font-size:10px;
+    cursor:pointer;
 }
 
-/* pagination */
+/* ページ */
 #pagination{
     display:flex;
     justify-content:center;
@@ -138,13 +135,11 @@ button {
 <h1>💎 宝石図鑑</h1>
 
 <div class="form">
-<input type="file" id="photo">
-<input type="text" id="name" placeholder="宝石名">
-<input type="text" id="tags" placeholder="タグ（カンマ区切り）">
+<input id="photo" type="file">
+<input id="name" placeholder="宝石名">
+<input id="tags" placeholder="タグ（カンマ区切り）">
 <button onclick="saveGem()">登録</button>
 </div>
-
-<input type="text" id="search" placeholder="検索" oninput="render()">
 
 <div id="gallery" class="grid"></div>
 
@@ -157,61 +152,44 @@ button {
 <script>
 
 let gems = JSON.parse(localStorage.getItem("gems")) || [];
-
 let currentPage = 1;
 const pageSize = 12;
 
-/* ---------------- 登録 ---------------- */
+/* 登録 */
 function saveGem(){
 
     const file = document.getElementById("photo").files[0];
     const name = document.getElementById("name").value;
     const tags = document.getElementById("tags").value;
 
-    if(!file || !name){
-        alert("写真と名前必須");
-        return;
-    }
+    if(!file || !name) return alert("必須");
 
     const reader = new FileReader();
 
-    reader.onload = function(e){
+    reader.onload = e => {
 
         gems.push({
-            id: Date.now(),
-            image: e.target.result,
+            id:Date.now(),
+            image:e.target.result,
             name,
             tags
         });
 
-        localStorage.setItem("gems", JSON.stringify(gems));
+        localStorage.setItem("gems",JSON.stringify(gems));
         render();
     };
 
     reader.readAsDataURL(file);
 }
 
-/* ---------------- 検索 ---------------- */
-function getFiltered(){
-
-    const keyword = document.getElementById("search").value.toLowerCase();
-
-    return gems.filter(g =>
-        g.name.toLowerCase().includes(keyword) ||
-        (g.tags || "").toLowerCase().includes(keyword)
-    );
-}
-
-/* ---------------- 描画 ---------------- */
+/* 表示 */
 function render(){
 
     const gallery = document.getElementById("gallery");
     gallery.innerHTML = "";
 
-    const filtered = getFiltered();
-
     const start = (currentPage - 1) * pageSize;
-    const pageItems = filtered.slice(start, start + pageSize);
+    const pageItems = gems.slice(start, start + pageSize);
 
     pageItems.forEach(g => {
 
@@ -224,36 +202,39 @@ function render(){
 
                 <h3>${g.name}</h3>
 
-                <div class="tags">
+                <!-- タグ専用スペース（ここが重要） -->
+                <div class="tag-area">
                 ${(g.tags || "")
                     .split(",")
                     .map(t => t.trim())
                     .filter(t => t)
-                    .map(tag =>
-                        `<span class="tag">#${tag}</span>`
+                    .map(t =>
+                        `<span class="tag">#${t}</span>`
                     ).join("")}
                 </div>
 
-                <button onclick="deleteGem(${g.id})">削除</button>
+                <!-- ボタン専用スペース -->
+                <div class="button-area">
+                    <button onclick="deleteGem(${g.id})">削除</button>
+                </div>
 
             </div>
         </div>
         `;
     });
 
-    const max = Math.ceil(filtered.length / pageSize);
     document.getElementById("pageInfo").textContent =
-        `${currentPage} / ${max || 1}`;
+        `${currentPage}`;
 }
 
-/* ---------------- 削除 ---------------- */
+/* 削除 */
 function deleteGem(id){
     gems = gems.filter(g => g.id !== id);
-    localStorage.setItem("gems", JSON.stringify(gems));
+    localStorage.setItem("gems",JSON.stringify(gems));
     render();
 }
 
-/* ---------------- ページ ---------------- */
+/* ページ */
 function nextPage(){
     currentPage++;
     render();
