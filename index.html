@@ -258,7 +258,7 @@ input{
   
 }
 
-/* 追加：ページネーションの見た目 */
+/* 追加：ページネーションUIのスタイル */
 .pagination {
     display: flex;
     justify-content: center;
@@ -279,17 +279,38 @@ input{
 
 </div></div><script>
   
+// スマホのローカルストレージ（大容量領域 IndexedDB）への接続準備
+let db;
+const request = indexedDB.open("GemDatabase", 1);
 
-  
-let gems = JSON.parse(localStorage.getItem("gems")) || [];
-  
+request.onupgradeneeded = e => {
+    db = e.target.result;
+    db.createObjectStore("gems", { keyPath: "id" });
+};
 
-  
+request.onsuccess = e => {
+    db = e.target.result;
+    loadGems(); // 起動時にスマホ内からデータをロード
+};
+
+let gems = [];
 let editId = null;
 
-// 追加：ページ管理用の変数（1ページあたり12個）
+// ページ管理用の変数（1ページあたり12個）
 let currentPage = 1;
 const itemsPerPage = 12;
+
+// スマホからデータを読み込む関数
+function loadGems() {
+    const transaction = db.transaction(["gems"], "readonly");
+    const store = transaction.objectStore("gems");
+    const getAllRequest = store.getAll();
+
+    getAllRequest.onsuccess = () => {
+        gems = getAllRequest.result || [];
+        render();
+    };
+}
   
 
   
@@ -317,13 +338,9 @@ function saveGem(){
   
     reader.onload = e => {
   
-        const newId = Date.now();
+        const newGem = {
   
-
-  
-        gems.push({
-  
-            id: newId,
+            id: Date.now(),
   
             image: e.target.result,
   
@@ -337,38 +354,17 @@ function saveGem(){
   
                 .filter(Boolean)
   
-        });
+        };
   
+        // スマホの保存領域（IndexedDB）に書き込み
+        const transaction = db.transaction(["gems"], "readwrite");
+        const store = transaction.objectStore("gems");
+        const addRequest = store.add(newGem);
 
-  
-        localStorage.setItem("gems", JSON.stringify(gems));
-  
-        
-        // 追加：登録したアイテムがソート後に位置するページを計算して、そのページに自動ジャンプ
-        const keyword = document.getElementById("search").value.toLowerCase();
-        let filtered = gems.filter(g =>
-            (g.name || "").toLowerCase().includes(keyword) ||
-            (g.tags || []).join(",").toLowerCase().includes(keyword)
-        );
-        filtered.sort((a, b) => {
-            const tagsA = a.tags || [];
-            const tagsB = b.tags || [];
-            const a1 = (tagsA[0] || "").toLowerCase();
-            const b1 = (tagsB[0] || "").toLowerCase();
-            const first = a1.localeCompare(b1);
-            if (first !== 0) return first;
-            const a2 = (tagsA[1] || "").toLowerCase();
-            const b2 = (tagsB[1] || "").toLowerCase();
-            const second = a2.localeCompare(b2);
-            if (second !== 0) return second;
-            return (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase());
-        });
-        const newIndex = filtered.findIndex(g => g.id === newId);
-        if (newIndex !== -1) {
-            currentPage = Math.floor(newIndex / itemsPerPage) + 1;
-        }
-
-        render();
+        addRequest.onsuccess = () => {
+            gems.push(newGem);
+            render();
+        };
   
     };
   
@@ -383,13 +379,15 @@ function saveGem(){
 /* ---------------- 削除 ---------------- */
   
 function deleteGem(id){
-  
-    gems = gems.filter(g => g.id !== id);
-  
-    localStorage.setItem("gems", JSON.stringify(gems));
-  
-    render();
-  
+    // スマホの保存領域（IndexedDB）から削除
+    const transaction = db.transaction(["gems"], "readwrite");
+    const store = transaction.objectStore("gems");
+    const deleteRequest = store.delete(id);
+
+    deleteRequest.onsuccess = () => {
+        gems = gems.filter(g => g.id !== id);
+        render();
+    };
 }
   
 
@@ -454,19 +452,19 @@ function saveEdit(){
   
         .filter(Boolean);
   
+    // スマホの保存領域（IndexedDB）のデータを更新
+    const transaction = db.transaction(["gems"], "readwrite");
+    const store = transaction.objectStore("gems");
+    const updateRequest = store.put(g);
 
-  
-    localStorage.setItem("gems", JSON.stringify(gems));
-  
-
-  
-    closeEdit();
-  
-    render();
+    updateRequest.onsuccess = () => {
+        closeEdit();
+        render();
+    };
   
 }
 
-// 追加：ページ切り替え関数
+// 追加：ページ切り替え
 function changePage(direction) {
     currentPage += direction;
     render();
@@ -544,18 +542,17 @@ function render(){
   
     });
   
-    // 追加：全ページ数の計算とガード処理
+    // ページ数の計算とガード処理
     const totalItems = filtered.length;
     const maxPage = Math.ceil(totalItems / itemsPerPage) || 1;
     if (currentPage > maxPage) currentPage = maxPage;
     if (currentPage < 1) currentPage = 1;
 
-    // 追加：現在のページの12個だけを切り出す処理
+    // 現在のページの12個だけを切り出してループ処理
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const pageItems = filtered.slice(startIndex, endIndex);
 
-    // 全件ループ（filtered）から、12個限定ループ（pageItems）に変更
     pageItems.forEach(g => {
   
 
@@ -608,17 +605,11 @@ function render(){
   
     });
 
-    // 追加：ページ下部のボタン状態とページ数を画面に反映
+    // ページネーションUIの更新
     document.getElementById("pageInfo").innerText = `${currentPage} / ${maxPage}`;
     document.getElementById("prevBtn").disabled = (currentPage === 1);
     document.getElementById("nextBtn").disabled = (currentPage === maxPage);
   
 }
-  
-
-  
-render();
-  
-
   
 </script></body></html>
