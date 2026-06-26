@@ -272,9 +272,9 @@ input{
     cursor: pointer;
 }
   
-</style></head><body><h1>💎 宝石図鑑</h1><div class="form"><input id="photo" type="file" accept="image/*"><input id="name" placeholder="宝石名"><input id="tags" placeholder="タグ（カンマ区切り）"><button type="button" onclick="saveGem(event)">登録</button>
+</style></head><body><h1>💎 宝石図鑑</h1><div class="form"><input id="photo" type="file" accept="image/*"><input id="name" placeholder="宝石名"><input id="tags" placeholder="タグ（カンマ区切り）"><button onclick="saveGem()">登録</button>
 
-</div><input id="search" placeholder="検索" oninput="resetPageAndRender()"><div id="gallery" class="grid"></div><div class="pagination"><button id="prevBtn" onclick="changePage(-1)">前へ</button><span id="pageInfo"></span><button id="nextBtn" onclick="changePage(1)">次へ</button></div><div id="modal" class="modal"><div class="modal-content"><h3>編集</h3><textarea id="editName"></textarea><input id="editTags" placeholder="タグ"><button onclick="saveEdit()">保存</button>
+</div><input id="search" placeholder="検索" oninput="currentPage=1;render()"><div id="gallery" class="grid"></div><div class="pagination"><button id="prevBtn" onclick="changePage(-1)">前へ</button><span id="pageInfo"></span><button id="nextBtn" onclick="changePage(1)">次へ</button></div><div id="modal" class="modal"><div class="modal-content"><h3>編集</h3><textarea id="editName"></textarea><input id="editTags" placeholder="タグ"><button onclick="saveEdit()">保存</button>
 
 <button onclick="closeEdit()">キャンセル</button>
 
@@ -288,7 +288,7 @@ let gems = JSON.parse(localStorage.getItem("gems")) || [];
   
 let editId = null;
 
-// ページネーション用変数
+// ページネーション設定
 let currentPage = 1;
 const itemsPerPage = 12;
   
@@ -296,9 +296,7 @@ const itemsPerPage = 12;
   
 /* ---------------- 保存 ---------------- */
   
-function saveGem(event){
-    // ボタンクリックによる予期せぬページリフレッシュを完全に防止
-    if(event) event.preventDefault();
+function saveGem(){
   
 
   
@@ -320,40 +318,31 @@ function saveGem(event){
   
     reader.onload = e => {
   
-
-  
-        gems.push({
-  
+        const newGem = {
             id: Date.now(),
-  
             image: e.target.result,
-  
             name,
-  
             tags: tags
-  
                 .split(",")
-  
                 .map(t => t.trim())
-  
                 .filter(Boolean)
-        });
-  
+        };
 
+        gems.push(newGem);
   
         localStorage.setItem("gems", JSON.stringify(gems));
         
-        // フォームをクリアしてリフレッシュ
-        document.getElementById("photo").value = "";
-        document.getElementById("name").value = "";
-        document.getElementById("tags").value = "";
-        
-        resetPageAndRender();
+        // 追加したアイテムがソート後に何ページ目に位置するか計算し、そのページに移動する
+        setTimeout(() => {
+            goToItemPage(newGem.id);
+        }, 10);
+  
     };
   
 
   
     reader.readAsDataURL(file);
+  
 }
   
 
@@ -365,17 +354,6 @@ function deleteGem(id){
     gems = gems.filter(g => g.id !== id);
   
     localStorage.setItem("gems", JSON.stringify(gems));
-    
-    // 削除によって現在のページが空になった場合のケア
-    const keyword = document.getElementById("search").value.toLowerCase();
-    const filtered = gems.filter(g =>
-        (g.name || "").toLowerCase().includes(keyword) ||
-        (g.tags || []).join(",").toLowerCase().includes(keyword)
-    );
-    const maxPage = Math.ceil(filtered.length / itemsPerPage) || 1;
-    if (currentPage > maxPage) {
-        currentPage = maxPage;
-    }
   
     render();
   
@@ -456,13 +434,39 @@ function saveEdit(){
 }
 
 /* ---------------- ページ操作 ---------------- */
-function resetPageAndRender(){
-    currentPage = 1;
+function changePage(direction) {
+    currentPage += direction;
     render();
 }
 
-function changePage(direction) {
-    currentPage += direction;
+function goToItemPage(itemId) {
+    const keyword = document.getElementById("search").value.toLowerCase();
+    let filtered = gems.filter(g =>
+        (g.name || "").toLowerCase().includes(keyword) ||
+        (g.tags || []).join(",").toLowerCase().includes(keyword)
+    );
+
+    // 既存のソート処理を通す
+    filtered.sort((a, b) => {
+        const tagsA = a.tags || [];
+        const tagsB = b.tags || [];
+        const a1 = (tagsA[0] || "").toLowerCase();
+        const b1 = (tagsB[0] || "").toLowerCase();
+        const first = a1.localeCompare(b1);
+        if (first !== 0) return first;
+        const a2 = (tagsA[1] || "").toLowerCase();
+        const b2 = (tagsB[1] || "").toLowerCase();
+        const second = a2.localeCompare(b2);
+        if (second !== 0) return second;
+        return (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase());
+    });
+
+    const index = filtered.findIndex(g => g.id === itemId);
+    if (index !== -1) {
+        currentPage = Math.floor(index / itemsPerPage) + 1;
+    } else {
+        currentPage = 1;
+    }
     render();
 }
   
@@ -538,11 +542,13 @@ function render(){
   
     });
   
-    // ページネーションの計算
+    // ページ範囲の安全弁
     const totalItems = filtered.length;
     const maxPage = Math.ceil(totalItems / itemsPerPage) || 1;
+    if (currentPage > maxPage) currentPage = maxPage;
+    if (currentPage < 1) currentPage = 1;
     
-    // 表示する範囲を切り出し
+    // 12個ずつ切り出し
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const pageItems = filtered.slice(startIndex, endIndex);
@@ -599,7 +605,7 @@ function render(){
   
     });
     
-    // ページネーションUIの更新
+    // UI更新
     document.getElementById("pageInfo").innerText = `${currentPage} / ${maxPage}`;
     document.getElementById("prevBtn").disabled = (currentPage === 1);
     document.getElementById("nextBtn").disabled = (currentPage === maxPage);
