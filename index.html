@@ -50,36 +50,63 @@ button{
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(0,0,0,.15);
+
+    display: flex;
+    flex-direction: column;
 }
 
 .card img {
     width: 100%;
-    height: 90px;     /* ←ここで高さ調整 */
+    height: 90px;
     object-fit: cover;
+    flex-shrink: 0;
 }
 
 .card h3 {
-    font-size: 10px;
+    font-size: 12px;
+    line-height: 1.2;
     margin: 4px 0;
 
-    white-space: nowrap;     /* ←1行固定 */
-    overflow: hidden;        /* ←はみ出し隠す */
-    text-overflow: ellipsis; /* ←...表示 */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+
+    min-height: 2.4em; /* ←高さ固定のカギ */
+}
+
+.card button {
+    margin-top: auto; /* ←これが神ポイント */
 }
 
 .card-body {
-    padding: 4px 6px;   /* ←ここで全体が締まる */
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
 }
 
-.tag{
-    display:inline-block;
-    background:#4a90e2;
-    color:white;
-    padding:4px 8px;
-    border-radius:999px;
-    margin:2px;
-    font-size:12px;
-    cursor:pointer;
+.tag {
+    display: inline-block;
+    background: #4a90e2;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 999px;
+    margin: 2px;
+    font-size: 11px;
+    cursor: pointer;
+
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tags {
+    min-height: 28px;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
 }
 
 #pagination{
