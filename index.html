@@ -257,10 +257,24 @@ input{
     max-width:400px;
   
 }
+
+/* ページネーション */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.pagination button {
+    padding: 5px 10px;
+    cursor: pointer;
+}
   
 </style></head><body><h1>💎 宝石図鑑</h1><div class="form"><input id="photo" type="file" accept="image/*"><input id="name" placeholder="宝石名"><input id="tags" placeholder="タグ（カンマ区切り）"><button onclick="saveGem()">登録</button>
 
-</div><input id="search" placeholder="検索" oninput="render()"><div id="gallery" class="grid"></div><!-- 編集モーダル --><div id="modal" class="modal"><div class="modal-content"><h3>編集</h3><textarea id="editName"></textarea><input id="editTags" placeholder="タグ"><button onclick="saveEdit()">保存</button>
+</div><input id="search" placeholder="検索" oninput="resetPageAndRender()"><div id="gallery" class="grid"></div><!-- ページネーション操作部 --><div class="pagination"><button id="prevBtn" onclick="changePage(-1)">前へ</button><span id="pageInfo"></span><button id="nextBtn" onclick="changePage(1)">次へ</button></div><!-- 編集モーダル --><div id="modal" class="modal"><div class="modal-content"><h3>編集</h3><textarea id="editName"></textarea><input id="editTags" placeholder="タグ"><button onclick="saveEdit()">保存</button>
 
 <button onclick="closeEdit()">キャンセル</button>
 
@@ -273,6 +287,10 @@ let gems = JSON.parse(localStorage.getItem("gems")) || [];
 
   
 let editId = null;
+
+// ページネーション用変数
+let currentPage = 1;
+const itemsPerPage = 12;
   
 
   
@@ -323,8 +341,7 @@ function saveGem(){
 
   
         localStorage.setItem("gems", JSON.stringify(gems));
-  
-        render();
+        resetPageAndRender();
   
     };
   
@@ -343,6 +360,17 @@ function deleteGem(id){
     gems = gems.filter(g => g.id !== id);
   
     localStorage.setItem("gems", JSON.stringify(gems));
+    
+    // 削除によって現在のページが空になった場合のケア
+    const keyword = document.getElementById("search").value.toLowerCase();
+    const filtered = gems.filter(g =>
+        (g.name || "").toLowerCase().includes(keyword) ||
+        (g.tags || []).join(",").toLowerCase().includes(keyword)
+    );
+    const maxPage = Math.ceil(filtered.length / itemsPerPage) || 1;
+    if (currentPage > maxPage) {
+        currentPage = maxPage;
+    }
   
     render();
   
@@ -421,6 +449,17 @@ function saveEdit(){
     render();
   
 }
+
+/* ---------------- ページ操作 ---------------- */
+function resetPageAndRender(){
+    currentPage = 1;
+    render();
+}
+
+function changePage(direction) {
+    currentPage += direction;
+    render();
+}
   
 
   
@@ -494,9 +533,16 @@ function render(){
   
     });
   
+    // ページネーションの計算
+    const totalItems = filtered.length;
+    const maxPage = Math.ceil(totalItems / itemsPerPage) || 1;
+    
+    // 表示する範囲を切り出し
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const pageItems = filtered.slice(startIndex, endIndex);
 
-  
-    filtered.forEach(g => {
+    pageItems.forEach(g => {
   
 
   
@@ -547,7 +593,11 @@ function render(){
         `;
   
     });
-  
+    
+    // ページネーションUIの更新
+    document.getElementById("pageInfo").innerText = `${currentPage} / ${maxPage}`;
+    document.getElementById("prevBtn").disabled = (currentPage === 1);
+    document.getElementById("nextBtn").disabled = (currentPage === maxPage);
 }
   
 
@@ -556,5 +606,4 @@ render();
   
 
   
-</script></body></html>  
-ついかして
+</script></body></html>
