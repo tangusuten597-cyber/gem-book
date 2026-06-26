@@ -379,6 +379,11 @@ function saveGem(){
 /* ---------------- 削除 ---------------- */
   
 function deleteGem(id){
+    // 削除前に確認を入れる（「キャンセル」を押したら処理を中断する）
+    if (!confirm("本当にこの宝石を削除してもよろしいですか？")) {
+        return;
+    }
+
     // スマホの保存領域（IndexedDB）から削除
     const transaction = db.transaction(["gems"], "readwrite");
     const store = transaction.objectStore("gems");
@@ -389,6 +394,7 @@ function deleteGem(id){
         render();
     };
 }
+
   
 
   
