@@ -258,7 +258,7 @@ input{
   
 }
 
-/* 追加したページネーションUIのスタイル */
+/* 追加：ページネーションの見た目 */
 .pagination {
     display: flex;
     justify-content: center;
@@ -287,7 +287,7 @@ let gems = JSON.parse(localStorage.getItem("gems")) || [];
   
 let editId = null;
 
-// 追加したページネーション用変数
+// 追加：ページ管理用の変数（1ページあたり12個）
 let currentPage = 1;
 const itemsPerPage = 12;
   
@@ -317,11 +317,13 @@ function saveGem(){
   
     reader.onload = e => {
   
+        const newId = Date.now();
+  
 
   
         gems.push({
   
-            id: Date.now(),
+            id: newId,
   
             image: e.target.result,
   
@@ -341,6 +343,31 @@ function saveGem(){
   
         localStorage.setItem("gems", JSON.stringify(gems));
   
+        
+        // 追加：登録したアイテムがソート後に位置するページを計算して、そのページに自動ジャンプ
+        const keyword = document.getElementById("search").value.toLowerCase();
+        let filtered = gems.filter(g =>
+            (g.name || "").toLowerCase().includes(keyword) ||
+            (g.tags || []).join(",").toLowerCase().includes(keyword)
+        );
+        filtered.sort((a, b) => {
+            const tagsA = a.tags || [];
+            const tagsB = b.tags || [];
+            const a1 = (tagsA[0] || "").toLowerCase();
+            const b1 = (tagsB[0] || "").toLowerCase();
+            const first = a1.localeCompare(b1);
+            if (first !== 0) return first;
+            const a2 = (tagsA[1] || "").toLowerCase();
+            const b2 = (tagsB[1] || "").toLowerCase();
+            const second = a2.localeCompare(b2);
+            if (second !== 0) return second;
+            return (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase());
+        });
+        const newIndex = filtered.findIndex(g => g.id === newId);
+        if (newIndex !== -1) {
+            currentPage = Math.floor(newIndex / itemsPerPage) + 1;
+        }
+
         render();
   
     };
@@ -439,7 +466,7 @@ function saveEdit(){
   
 }
 
-/* 追加したページ操作用関数 */
+// 追加：ページ切り替え関数
 function changePage(direction) {
     currentPage += direction;
     render();
@@ -517,17 +544,18 @@ function render(){
   
     });
   
-    // ページ数の計算とガード処理
+    // 追加：全ページ数の計算とガード処理
     const totalItems = filtered.length;
     const maxPage = Math.ceil(totalItems / itemsPerPage) || 1;
     if (currentPage > maxPage) currentPage = maxPage;
     if (currentPage < 1) currentPage = 1;
 
-    // 現在のページの12個だけを切り出し
+    // 追加：現在のページの12個だけを切り出す処理
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const pageItems = filtered.slice(startIndex, endIndex);
 
+    // 全件ループ（filtered）から、12個限定ループ（pageItems）に変更
     pageItems.forEach(g => {
   
 
@@ -580,7 +608,7 @@ function render(){
   
     });
 
-    // ページネーションUIの更新
+    // 追加：ページ下部のボタン状態とページ数を画面に反映
     document.getElementById("pageInfo").innerText = `${currentPage} / ${maxPage}`;
     document.getElementById("prevBtn").disabled = (currentPage === 1);
     document.getElementById("nextBtn").disabled = (currentPage === maxPage);
