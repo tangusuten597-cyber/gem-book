@@ -42,8 +42,8 @@ button {
 .grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 6px;      /* ←余白を詰める */
-    padding: 4px;  /* ←外側も詰める */
+    gap: 6px;
+    padding: 4px;
 }
 
 .card {
@@ -60,22 +60,15 @@ button {
     width: 100%;
     height: 80px;
     object-fit: cover;
-    flex-shrink: 0;
 }
 
 .card h3 {
     font-size: 12px;
     line-height: 1.2;
     margin: 4px 0;
-
-    white-space: pre-line;  /* ←改行をそのまま表示 */
+    white-space: pre-line;
     overflow: hidden;
-
-    min-height: 2.4em; /* カード高さ安定 */
-}
-
-.card button {
-    margin-top: auto; /* ←これが神ポイント */
+    min-height: 2.4em;
 }
 
 .card-body {
@@ -83,6 +76,10 @@ button {
     display: flex;
     flex-direction: column;
     flex: 1;
+}
+
+.card button {
+    margin-top: auto;
 }
 
 .tag {
@@ -94,18 +91,12 @@ button {
     margin: 2px;
     font-size: 11px;
     cursor: pointer;
-
-    max-width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .tags {
     min-height: 28px;
     display: flex;
     flex-wrap: wrap;
-    align-content: flex-start;
 }
 
 #pagination{
@@ -115,7 +106,7 @@ button {
     margin:15px;
 }
 
-/* 🔧 モーダル（編集画面） */
+/* モーダル */
 .modal{
     display:none;
     position:fixed;
@@ -144,12 +135,10 @@ button {
 <input type="file" id="photo" accept="image/*">
 <textarea id="name" placeholder="宝石名"></textarea>
 <input type="text" id="tags" placeholder="タグ（カンマ区切り）">
-<textarea id="memo" placeholder="メモ"></textarea>
 <button onclick="saveGem()">登録</button>
 </div>
 
 <input type="text" id="search" placeholder="検索" oninput="render()">
-
 <button onclick="clearTagFilter()">タグ解除</button>
 
 <div id="gallery" class="grid"></div>
@@ -160,15 +149,14 @@ button {
 <button onclick="nextPage()">次 →</button>
 </div>
 
-<!-- 🔧 編集モーダル -->
+<!-- 編集 -->
 <div id="modal" class="modal">
 <div class="modal-content">
 
 <h3>編集</h3>
 
 <textarea id="editName"></textarea>
-<input id="editTags" placeholder="タグ">
-<textarea id="editMemo"></textarea>
+<input id="editTags">
 
 <button onclick="saveEdit()">保存</button>
 <button onclick="closeModal()">キャンセル</button>
@@ -184,16 +172,14 @@ let currentTag = "";
 let currentPage = 1;
 const pageSize = 12;
 
-let editIndex = null;
+let editId = null;
 
 /* ---------------- 登録 ---------------- */
-
 function saveGem(){
 
     const file = document.getElementById("photo").files[0];
     const name = document.getElementById("name").value;
     const tags = document.getElementById("tags").value;
-    const memo = document.getElementById("memo").value;
 
     if(!file || !name){
         alert("写真と名前必須");
@@ -205,13 +191,13 @@ function saveGem(){
     reader.onload = function(e){
 
         gems.push({
-            image:e.target.result,
+            id: Date.now(),
+            image: e.target.result,
             name,
-            tags,
-            memo
+            tags
         });
 
-        localStorage.setItem("gems",JSON.stringify(gems));
+        localStorage.setItem("gems", JSON.stringify(gems));
         render();
     };
 
@@ -219,88 +205,6 @@ function saveGem(){
 }
 
 /* ---------------- フィルタ ---------------- */
-
-function filterByTag(tag){
-    currentTag = tag;
-    currentPage = 1;
-    render();
-}
-
-function clearTagFilter(){
-    currentTag = "";
-    currentPage = 1;
-    render();
-}
-
-/* ---------------- 削除 ---------------- */
-
-function deleteGem(index){
-
-    if(confirm("削除する？")){
-        gems.splice(index,1);
-        localStorage.setItem("gems",JSON.stringify(gems));
-        render();
-    }
-}
-
-/* ---------------- 編集 ---------------- */
-
-function openEdit(index){
-
-    editIndex = index;
-
-    const g = gems[index];
-
-    document.getElementById("editName").value = g.name;
-    document.getElementById("editTags").value = g.tags;
-    document.getElementById("editMemo").value = g.memo;
-
-    document.getElementById("modal").style.display = "flex";
-}
-
-function closeModal(){
-    document.getElementById("modal").style.display = "none";
-    editIndex = null;
-}
-
-function saveEdit(){
-
-    if(editIndex === null) return;
-
-    gems[editIndex].name =
-        document.getElementById("editName").value;
-
-    gems[editIndex].tags =
-        document.getElementById("editTags").value;
-
-    gems[editIndex].memo =
-        document.getElementById("editMemo").value;
-
-    localStorage.setItem("gems",JSON.stringify(gems));
-
-    closeModal();
-    render();
-}
-
-/* ---------------- ページ ---------------- */
-
-function nextPage(){
-    const max = Math.ceil(getFiltered().length / pageSize);
-    if(currentPage < max){
-        currentPage++;
-        render();
-    }
-}
-
-function prevPage(){
-    if(currentPage > 1){
-        currentPage--;
-        render();
-    }
-}
-
-/* ---------------- フィルタ ---------------- */
-
 function getFiltered(){
 
     const keyword =
@@ -315,15 +219,16 @@ function getFiltered(){
 
         const tagMatch =
             currentTag === "" ||
-            g.tags.split(",")
-            .map(t=>t.trim())
-            .includes(currentTag);
+            (g.tags || "")
+                .split(",")
+                .map(t => t.trim())
+                .includes(currentTag);
 
         return keywordMatch && tagMatch;
     });
 }
 
-/* ---------------- 描画 ---------------- */
+/* ---------------- ソート ---------------- */
 function render(){
 
     const gallery = document.getElementById("gallery");
@@ -331,51 +236,42 @@ function render(){
 
     const filtered = getFiltered();
 
-    /* ⭐ ここ追加（並び替え） */
     filtered.sort((a, b) => {
 
-    const tagsA = (a.tags || "")
-        .split(",")
-        .map(t => t.trim())
-        .filter(t => t !== "");
+        const tagsA = (a.tags || "")
+            .split(",")
+            .map(t => t.trim())
+            .filter(t => t);
 
-    const tagsB = (b.tags || "")
-        .split(",")
-        .map(t => t.trim())
-        .filter(t => t !== "");
+        const tagsB = (b.tags || "")
+            .split(",")
+            .map(t => t.trim())
+            .filter(t => t);
 
-    const a1 = (tagsA[0] || "").toLowerCase();
-    const b1 = (tagsB[0] || "").toLowerCase();
+        const a1 = (tagsA[0] || "").toLowerCase();
+        const b1 = (tagsB[0] || "").toLowerCase();
 
-    // ① まず1個目のタグで比較
-    const firstCompare = a1.localeCompare(b1);
+        const first = a1.localeCompare(b1);
+        if(first !== 0) return first;
 
-    if (firstCompare !== 0) {
-        return firstCompare;
-    }
+        const a2 = (tagsA[1] || "").toLowerCase();
+        const b2 = (tagsB[1] || "").toLowerCase();
 
-    const a2 = (tagsA[1] || "").toLowerCase();
-    const b2 = (tagsB[1] || "").toLowerCase();
+        const second = a2.localeCompare(b2);
+        if(second !== 0) return second;
 
-    // ② 同じ1個目タグなら2個目で比較
-    const secondCompare = a2.localeCompare(b2);
+        const nameA = (a.name || "").toLowerCase();
+        const nameB = (b.name || "").toLowerCase();
 
-    if (secondCompare !== 0) {
-        return secondCompare;
-    }
-
-    // ③ それも同じなら名前順（保険）
-    const nameA = (a.name || "").trim().toLowerCase();
-    const nameB = (b.name || "").trim().toLowerCase();
-
-    return nameA.localeCompare(bName);
+        return nameA.localeCompare(nameB);
     });
+
     const start = (currentPage - 1) * pageSize;
     const pageItems = filtered.slice(start, start + pageSize);
 
     pageItems.forEach(g => {
 
-        const index = gems.indexOf(g);
+        const index = gems.findIndex(x => x.id === g.id);
 
         gallery.innerHTML += `
         <div class="card">
@@ -386,43 +282,93 @@ function render(){
 
                 <h3>${g.name}</h3>
 
-                <div>
-                ${g.tags.split(",").map(tag=>
-                    `<span class="tag"
-                    onclick="filterByTag('${tag.trim()}')">
-                    #${tag.trim()}
-                    </span>`
-                ).join("")}
+                <div class="tags">
+                ${(g.tags || "")
+                    .split(",")
+                    .map(t => t.trim())
+                    .filter(t => t)
+                    .map(tag =>
+                        `<span class="tag" onclick="filterByTag('${tag}')">#${tag}</span>`
+                    ).join("")}
                 </div>
 
-                <p>${g.memo}</p>
-
-                <button onclick="openEdit(${index})">
-                編集
-                </button>
-
-                <button onclick="deleteGem(${index})">
-                削除
-                </button>
+                <button onclick="openEdit(${g.id})">編集</button>
+                <button onclick="deleteGem(${g.id})">削除</button>
 
             </div>
         </div>
         `;
     });
 
-    const maxPage = Math.ceil(filtered.length / pageSize);
-
+    const max = Math.ceil(filtered.length / pageSize);
     document.getElementById("pageInfo").textContent =
-        `${currentPage} / ${maxPage || 1}`;
+        `${currentPage} / ${max || 1}`;
+}
+
+/* ---------------- 削除 ---------------- */
+function deleteGem(id){
+    if(confirm("削除する？")){
+        gems = gems.filter(g => g.id !== id);
+        localStorage.setItem("gems", JSON.stringify(gems));
+        render();
+    }
+}
+
+/* ---------------- 編集 ---------------- */
+function openEdit(id){
+    editId = id;
+    const g = gems.find(x => x.id === id);
+
+    document.getElementById("editName").value = g.name;
+    document.getElementById("editTags").value = g.tags;
+
+    document.getElementById("modal").style.display = "flex";
+}
+
+function closeModal(){
+    document.getElementById("modal").style.display = "none";
+    editId = null;
+}
+
+function saveEdit(){
+
+    const g = gems.find(x => x.id === editId);
+
+    g.name = document.getElementById("editName").value;
+    g.tags = document.getElementById("editTags").value;
+
+    localStorage.setItem("gems", JSON.stringify(gems));
+
+    closeModal();
+    render();
+}
+
+/* ---------------- UI ---------------- */
+function filterByTag(tag){
+    currentTag = tag;
+    currentPage = 1;
+    render();
+}
+
+function clearTagFilter(){
+    currentTag = "";
+    currentPage = 1;
+    render();
+}
+
+function nextPage(){
+    currentPage++;
+    render();
+}
+
+function prevPage(){
+    if(currentPage > 1){
+        currentPage--;
+        render();
+    }
 }
 
 render();
-
-/* ---------------- PWA ---------------- */
-
-if("serviceWorker" in navigator){
-    navigator.serviceWorker.register("service-worker.js");
-}
 
 </script>
 
