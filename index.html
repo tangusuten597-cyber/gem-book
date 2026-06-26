@@ -334,8 +334,17 @@ function render(){
     /* ⭐ ここ追加（並び替え） */
     filtered.sort((a, b) => {
 
-    const tagA = (a.tags.split(",")[0] || "").trim().toLowerCase();
-    const tagB = (b.tags.split(",")[0] || "").trim().toLowerCase();
+    const tagA = (a.tags || "")
+        .split(",")
+        .map(t => t.trim())
+        .filter(t => t !== "")[0]
+        .toLowerCase() || "";
+
+    const tagB = (b.tags || "")
+        .split(",")
+        .map(t => t.trim())
+        .filter(t => t !== "")[0]
+        .toLowerCase() || "";
 
     // ① タグで比較
     const tagCompare = tagA.localeCompare(tagB);
@@ -350,7 +359,6 @@ function render(){
 
     return nameA.localeCompare(nameB);
     });
-
     const start = (currentPage - 1) * pageSize;
     const pageItems = filtered.slice(start, start + pageSize);
 
