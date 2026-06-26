@@ -13,11 +13,8 @@ body{
     margin:20px;
 }
 
-h1{
-    text-align:center;
-}
+h1{text-align:center;}
 
-/* 入力 */
 .form{
     background:white;
     padding:15px;
@@ -37,10 +34,9 @@ input{
     display:grid;
     grid-template-columns:repeat(3,1fr);
     gap:6px;
-    align-items:stretch;
 }
 
-/* カード（重要：固定構造） */
+/* カード */
 .card{
     background:white;
     border-radius:8px;
@@ -49,7 +45,7 @@ input{
     display:flex;
     flex-direction:column;
 
-    height:220px; /* ←安定の核 */
+    height:220px;
     overflow:hidden;
 }
 
@@ -76,28 +72,22 @@ input{
 
 /* 中身 */
 .card-body{
-    padding: 4px;
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    justify-content: space-between; /* ←重要 */
-}
-
-/* ===== タグ専用“固定枠” ===== */
-.tag-area{
-    min-height:50px; /* ←ここが「空白スペース」 */
     padding:4px;
-
     display:flex;
-    flex-wrap:wrap;
-    gap:2px;
-
-    align-content:flex-start;
+    flex-direction:column;
+    flex:1;
 }
 
 /* タグ */
+.tag-area{
+    min-height:50px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:2px;
+    padding:4px;
+}
+
 .tag{
-    display:inline-block;
     background:#4a90e2;
     color:white;
     padding:2px 6px;
@@ -106,20 +96,26 @@ input{
     white-space:nowrap;
 }
 
-/* ボタン固定エリア */
+/* =========================
+   ボタン（ここが核心）
+========================= */
 .button-area{
-    height: 40px;        /* ←固定枠 */
-    display: flex;
-    gap: 4px;
-    padding: 4px;
-    align-items: center;
+    margin-top:auto;
+    display:flex;
+    gap:6px;
+    padding:4px;
 }
 
-/* ボタン */
-button{
-    padding:4px 6px;
+/* 編集・削除を完全同サイズ化 */
+.button-area button{
+    flex:1;              /* ←均等幅 */
+    height:28px;
     font-size:10px;
     cursor:pointer;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
 }
 
 /* ページ */
@@ -184,6 +180,13 @@ function saveGem(){
     reader.readAsDataURL(file);
 }
 
+/* 削除 */
+function deleteGem(id){
+    gems = gems.filter(g => g.id !== id);
+    localStorage.setItem("gems",JSON.stringify(gems));
+    render();
+}
+
 /* 表示 */
 function render(){
 
@@ -204,7 +207,6 @@ function render(){
 
                 <h3>${g.name}</h3>
 
-                <!-- タグ専用スペース（ここが重要） -->
                 <div class="tag-area">
                 ${(g.tags || "")
                     .split(",")
@@ -215,9 +217,16 @@ function render(){
                     ).join("")}
                 </div>
 
-                <!-- ボタン専用スペース -->
                 <div class="button-area">
-                    <button onclick="deleteGem(${g.id})">削除</button>
+
+                    <button onclick="alert('編集機能追加予定')">
+                        編集
+                    </button>
+
+                    <button onclick="deleteGem(${g.id})">
+                        削除
+                    </button>
+
                 </div>
 
             </div>
@@ -227,13 +236,6 @@ function render(){
 
     document.getElementById("pageInfo").textContent =
         `${currentPage}`;
-}
-
-/* 削除 */
-function deleteGem(id){
-    gems = gems.filter(g => g.id !== id);
-    localStorage.setItem("gems",JSON.stringify(gems));
-    render();
 }
 
 /* ページ */
