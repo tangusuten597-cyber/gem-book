@@ -153,13 +153,20 @@ input{
 
 <div id="gallery" class="grid"></div>
 
+<!-- ページ -->
+<div style="text-align:center; margin:10px;">
+    <button onclick="prevPage()">← 前</button>
+    <span id="pageInfo"></span>
+    <button onclick="nextPage()">次 →</button>
+</div>
+
 <!-- 編集モーダル -->
 <div id="modal" class="modal">
 <div class="modal-content">
 
 <h3>編集</h3>
 
-<textarea id="editName"></textarea>
+<input id="editName" placeholder="名前">
 <input id="editTags" placeholder="タグ">
 
 <button onclick="saveEdit()">保存</button>
@@ -173,6 +180,8 @@ input{
 let gems = JSON.parse(localStorage.getItem("gems")) || [];
 
 let editId = null;
+let currentPage = 1;
+const pageSize = 12;
 
 /* ---------------- 保存 ---------------- */
 function saveGem(){
@@ -248,21 +257,43 @@ function saveEdit(){
     render();
 }
 
+/* ---------------- ページ操作 ---------------- */
+function nextPage(){
+    const max = Math.ceil(getFiltered().length / pageSize);
+    if(currentPage < max){
+        currentPage++;
+        render();
+    }
+}
+
+function prevPage(){
+    if(currentPage > 1){
+        currentPage--;
+        render();
+    }
+}
+
 /* ---------------- 表示 ---------------- */
+function getFiltered(){
+
+    const keyword =
+        document.getElementById("search").value.toLowerCase();
+
+    return gems.filter(g =>
+        (g.name || "").toLowerCase().includes(keyword) ||
+        (g.tags || []).join(",").toLowerCase().includes(keyword)
+    );
+}
+
+/* ---------------- render ---------------- */
 function render(){
 
     const gallery = document.getElementById("gallery");
     gallery.innerHTML = "";
 
-    const keyword =
-        document.getElementById("search").value.toLowerCase();
+    let filtered = getFiltered();
 
-    let filtered = gems.filter(g =>
-        (g.name || "").toLowerCase().includes(keyword) ||
-        (g.tags || []).join(",").toLowerCase().includes(keyword)
-    );
-
-    /* ソート（そのまま維持） */
+    /* ソート */
     filtered.sort((a, b) => {
 
         const tagsA = a.tags || [];
@@ -272,19 +303,23 @@ function render(){
         const b1 = (tagsB[0] || "").toLowerCase();
 
         const first = a1.localeCompare(b1);
-        if (first !== 0) return first;
+        if(first !== 0) return first;
 
         const a2 = (tagsA[1] || "").toLowerCase();
         const b2 = (tagsB[1] || "").toLowerCase();
 
         const second = a2.localeCompare(b2);
-        if (second !== 0) return second;
+        if(second !== 0) return second;
 
         return (a.name || "").toLowerCase()
             .localeCompare((b.name || "").toLowerCase());
     });
 
-    filtered.forEach(g => {
+    /* ページング */
+    const start = (currentPage - 1) * pageSize;
+    const pageItems = filtered.slice(start, start + pageSize);
+
+    pageItems.forEach(g => {
 
         gallery.innerHTML += `
         <div class="card">
@@ -310,6 +345,9 @@ function render(){
         </div>
         `;
     });
+
+    document.getElementById("pageInfo").textContent =
+        `${currentPage} / ${Math.ceil(filtered.length / pageSize) || 1}`;
 }
 
 render();
@@ -317,4 +355,4 @@ render();
 </script>
 
 </body>
-</html>
+    </html>
