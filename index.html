@@ -49,7 +49,7 @@ input{
     display:flex;
     flex-direction:column;
 
-    height:190px; /* ←安定の核 */
+    height:220px; /* ←安定の核 */
     overflow:hidden;
 }
 
@@ -76,10 +76,11 @@ input{
 
 /* 中身 */
 .card-body{
-    padding:4px;
-    display:flex;
-    flex-direction:column;
-    flex:1;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    justify-content: space-between; /* ←重要 */
 }
 
 /* ===== タグ専用“固定枠” ===== */
@@ -107,10 +108,11 @@ input{
 
 /* ボタン固定エリア */
 .button-area{
-    margin-top:auto;
-    display:flex;
-    gap:4px;
-    padding:4px;
+    height: 40px;        /* ←固定枠 */
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    align-items: center;
 }
 
 /* ボタン */
