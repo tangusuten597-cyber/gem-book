@@ -68,12 +68,10 @@ button {
     line-height: 1.2;
     margin: 4px 0;
 
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+    white-space: pre-line;  /* ←改行をそのまま表示 */
     overflow: hidden;
 
-    min-height: 2.4em;
+    min-height: 2.4em; /* カード高さ安定 */
 }
 
 .card button {
