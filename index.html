@@ -326,7 +326,6 @@ function getFiltered(){
 }
 
 /* ---------------- 描画 ---------------- */
-
 function render(){
 
     const gallery = document.getElementById("gallery");
@@ -334,8 +333,17 @@ function render(){
 
     const filtered = getFiltered();
 
+    /* ⭐ ここ追加（並び替え） */
+    filtered.sort((a, b) => {
+
+        const tagA = (a.tags.split(",")[0] || "").trim().toLowerCase();
+        const tagB = (b.tags.split(",")[0] || "").trim().toLowerCase();
+
+        return tagA.localeCompare(tagB);
+    });
+
     const start = (currentPage - 1) * pageSize;
-    const pageItems = filtered.slice(start,start + pageSize);
+    const pageItems = filtered.slice(start, start + pageSize);
 
     pageItems.forEach(g => {
 
