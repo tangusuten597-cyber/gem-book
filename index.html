@@ -272,7 +272,7 @@ input{
     cursor: pointer;
 }
   
-</style></head><body><h1>💎 宝石図鑑</h1><div class="form"><input id="photo" type="file" accept="image/*"><input id="name" placeholder="宝石名"><input id="tags" placeholder="タグ（カンマ区切り）"><button onclick="saveGem()">登録</button>
+</style></head><body><h1>💎 宝石図鑑</h1><div class="form"><input id="photo" type="file" accept="image/*"><input id="name" placeholder="宝石名"><input id="tags" placeholder="タグ（カンマ区切り）"><button type="button" onclick="saveGem(event)">登録</button>
 
 </div><input id="search" placeholder="検索" oninput="resetPageAndRender()"><div id="gallery" class="grid"></div><div class="pagination"><button id="prevBtn" onclick="changePage(-1)">前へ</button><span id="pageInfo"></span><button id="nextBtn" onclick="changePage(1)">次へ</button></div><div id="modal" class="modal"><div class="modal-content"><h3>編集</h3><textarea id="editName"></textarea><input id="editTags" placeholder="タグ"><button onclick="saveEdit()">保存</button>
 
@@ -296,7 +296,9 @@ const itemsPerPage = 12;
   
 /* ---------------- 保存 ---------------- */
   
-function saveGem(){
+function saveGem(event){
+    // ボタンクリックによる予期せぬページリフレッシュを完全に防止
+    if(event) event.preventDefault();
   
 
   
@@ -335,20 +337,23 @@ function saveGem(){
                 .map(t => t.trim())
   
                 .filter(Boolean)
-  
         });
   
 
   
-        localStorage.setItem("gems", JSON.stringify(gems)); // ここで保存処理を行っています
+        localStorage.setItem("gems", JSON.stringify(gems));
+        
+        // フォームをクリアしてリフレッシュ
+        document.getElementById("photo").value = "";
+        document.getElementById("name").value = "";
+        document.getElementById("tags").value = "";
+        
         resetPageAndRender();
-  
     };
   
 
   
     reader.readAsDataURL(file);
-  
 }
   
 
