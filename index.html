@@ -88,12 +88,21 @@ input{
 }
 
 .tag{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+
     background:#4a90e2;
     color:white;
+
     padding:2px 6px;
     border-radius:999px;
+
     font-size:11px;
+    line-height:1;
+
     white-space:nowrap;
+    flex-shrink:0; /* ←崩れ防止 */
 }
 
 /* =========================
