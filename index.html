@@ -84,8 +84,7 @@ input{
     display:flex;
     flex-wrap:wrap;
     gap:3px;
-
-    align-items:flex-start; /* ←重要 */
+    align-items:flex-start;
     align-content:flex-start;
 }
 
@@ -101,15 +100,10 @@ input{
     border-radius:999px;
 
     font-size:11px;
-    line-height:1;
-
     white-space:nowrap;
-    flex-shrink:0; /* ←崩れ防止 */
 }
 
-/* =========================
-   ボタン（ここが核心）
-========================= */
+/* ボタン */
 .button-area{
     margin-top:auto;
     display:flex;
@@ -117,24 +111,11 @@ input{
     padding:4px;
 }
 
-/* 編集・削除を完全同サイズ化 */
 .button-area button{
-    flex:1;              /* ←均等幅 */
+    flex:1;
     height:28px;
     font-size:10px;
     cursor:pointer;
-
-    display:flex;
-    justify-content:center;
-    align-items:center;
-}
-
-/* ページ */
-#pagination{
-    display:flex;
-    justify-content:center;
-    gap:10px;
-    margin:15px;
 }
 </style>
 </head>
@@ -150,21 +131,15 @@ input{
 <button onclick="saveGem()">登録</button>
 </div>
 
-<div id="gallery" class="grid"></div>
+<input id="search" placeholder="検索" oninput="render()">
 
-<div id="pagination">
-<button onclick="prevPage()">← 前</button>
-<span id="pageInfo"></span>
-<button onclick="nextPage()">次 →</button>
-</div>
+<div id="gallery" class="grid"></div>
 
 <script>
 
 let gems = JSON.parse(localStorage.getItem("gems")) || [];
-let currentPage = 1;
-const pageSize = 12;
 
-/* 登録 */
+/* ---------------- 保存 ---------------- */
 function saveGem(){
 
     const file = document.getElementById("photo").files[0];
@@ -187,51 +162,39 @@ function saveGem(){
                 .filter(Boolean)
         });
 
-        localStorage.setItem("gems",JSON.stringify(gems));
+        localStorage.setItem("gems", JSON.stringify(gems));
         render();
     };
 
     reader.readAsDataURL(file);
 }
 
-/* 削除 */
+/* ---------------- 削除 ---------------- */
 function deleteGem(id){
     gems = gems.filter(g => g.id !== id);
-    localStorage.setItem("gems",JSON.stringify(gems));
+    localStorage.setItem("gems", JSON.stringify(gems));
     render();
 }
 
-/* 表示 */
+/* ---------------- 表示 ---------------- */
 function render(){
 
     const gallery = document.getElementById("gallery");
     gallery.innerHTML = "";
 
-    // ① まずフィルターを作る（これがfiltered）
-    let filtered = gems;
+    const keyword =
+        document.getElementById("search").value.toLowerCase();
 
-    // ② 検索（あれば）
-    const keyword = document.getElementById("search")?.value?.toLowerCase() || "";
+    let filtered = gems.filter(g =>
+        (g.name || "").toLowerCase().includes(keyword) ||
+        (g.tags || []).join(",").toLowerCase().includes(keyword)
+    );
 
-    if (keyword) {
-        filtered = filtered.filter(g =>
-            (g.name || "").toLowerCase().includes(keyword) ||
-            (g.tags || []).join(",").toLowerCase().includes(keyword)
-        );
-    }
-
-    // ③ ソート（ここでOK）
+    /* ★ソート（タグ→タグ→名前） */
     filtered.sort((a, b) => {
 
-        const tagsA = (a.tags || "")
-            .split(",")
-            .map(t => t.trim())
-            .filter(Boolean);
-
-        const tagsB = (b.tags || "")
-            .split(",")
-            .map(t => t.trim())
-            .filter(Boolean);
+        const tagsA = a.tags || [];
+        const tagsB = b.tags || [];
 
         const a1 = (tagsA[0] || "").toLowerCase();
         const b1 = (tagsB[0] || "").toLowerCase();
@@ -245,18 +208,11 @@ function render(){
         const second = a2.localeCompare(b2);
         if (second !== 0) return second;
 
-        const nameA = (a.name || "").toLowerCase();
-        const nameB = (b.name || "").toLowerCase();
-
-        return nameA.localeCompare(nameB);
+        return (a.name || "").toLowerCase()
+            .localeCompare((b.name || "").toLowerCase());
     });
 
-    // ④ ページング
-    const start = (currentPage - 1) * pageSize;
-    const pageItems = filtered.slice(start, start + pageSize);
-
-    // ⑤ 描画
-    pageItems.forEach(g => {
+    filtered.forEach(g => {
 
         gallery.innerHTML += `
         <div class="card">
@@ -268,12 +224,12 @@ function render(){
                 <h3>${g.name}</h3>
 
                 <div class="tag-area">
-                ${(g.tags || []).map(t => `<span 
-                class="tag">#${t}</span>`).join("")}
+                ${(g.tags || []).map(t =>
+                    `<span class="tag">#${t}</span>`
+                ).join("")}
                 </div>
 
                 <div class="button-area">
-                    <button onclick="openEdit(${g.id})">編集</button>
                     <button onclick="deleteGem(${g.id})">削除</button>
                 </div>
 
@@ -281,22 +237,6 @@ function render(){
         </div>
         `;
     });
-
-    document.getElementById("pageInfo").textContent =
-        `${currentPage}`;
-}
-
-/* ページ */
-function nextPage(){
-    currentPage++;
-    render();
-}
-
-function prevPage(){
-    if(currentPage > 1){
-        currentPage--;
-        render();
-    }
 }
 
 render();
