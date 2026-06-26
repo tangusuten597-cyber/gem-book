@@ -334,30 +334,41 @@ function render(){
     /* ⭐ ここ追加（並び替え） */
     filtered.sort((a, b) => {
 
-    const tagA = (a.tags || "")
+    const tagsA = (a.tags || "")
         .split(",")
         .map(t => t.trim())
-        .filter(t => t !== "")[0]
-        .toLowerCase() || "";
+        .filter(t => t !== "");
 
-    const tagB = (b.tags || "")
+    const tagsB = (b.tags || "")
         .split(",")
         .map(t => t.trim())
-        .filter(t => t !== "")[0]
-        .toLowerCase() || "";
+        .filter(t => t !== "");
 
-    // ① タグで比較
-    const tagCompare = tagA.localeCompare(tagB);
+    const a1 = (tagsA[0] || "").toLowerCase();
+    const b1 = (tagsB[0] || "").toLowerCase();
 
-    if (tagCompare !== 0) {
-        return tagCompare;
+    // ① まず1個目のタグで比較
+    const firstCompare = a1.localeCompare(b1);
+
+    if (firstCompare !== 0) {
+        return firstCompare;
     }
 
-    // ② 同じタグなら名前順
+    const a2 = (tagsA[1] || "").toLowerCase();
+    const b2 = (tagsB[1] || "").toLowerCase();
+
+    // ② 同じ1個目タグなら2個目で比較
+    const secondCompare = a2.localeCompare(b2);
+
+    if (secondCompare !== 0) {
+        return secondCompare;
+    }
+
+    // ③ それも同じなら名前順（保険）
     const nameA = (a.name || "").trim().toLowerCase();
     const nameB = (b.name || "").trim().toLowerCase();
 
-    return nameA.localeCompare(nameB);
+    return nameA.localeCompare(bName);
     });
     const start = (currentPage - 1) * pageSize;
     const pageItems = filtered.slice(start, start + pageSize);
