@@ -139,6 +139,10 @@ input{
 
 let gems = JSON.parse(localStorage.getItem("gems")) || [];
 
+<button onclick="localStorage.removeItem('gems'); location.reload();">
+データリセット
+</button>
+
 /* ---------------- 保存 ---------------- */
 function saveGem(){
 
