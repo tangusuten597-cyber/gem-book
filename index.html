@@ -41,8 +41,8 @@ button{
 .grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    padding: 5px;
+    gap: 6px;      /* ←余白を詰める */
+    padding: 4px;  /* ←外側も詰める */
 }
 
 .card {
@@ -54,12 +54,21 @@ button{
 
 .card img {
     width: 100%;
-    height: 100px;
+    height: 90px;     /* ←ここで高さ調整 */
     object-fit: cover;
 }
 
+.card h3 {
+    font-size: 14px;
+    margin: 4px 0;
+
+    white-space: nowrap;     /* ←1行固定 */
+    overflow: hidden;        /* ←はみ出し隠す */
+    text-overflow: ellipsis; /* ←...表示 */
+}
+
 .card-body {
-    padding: 6px;
+    padding: 4px 6px;   /* ←ここで全体が締まる */
 }
 
 .tag{
