@@ -334,10 +334,21 @@ function render(){
     /* ⭐ ここ追加（並び替え） */
     filtered.sort((a, b) => {
 
-        const tagA = (a.tags.split(",")[0] || "").trim().toLowerCase();
-        const tagB = (b.tags.split(",")[0] || "").trim().toLowerCase();
+    const tagA = (a.tags.split(",")[0] || "").trim().toLowerCase();
+    const tagB = (b.tags.split(",")[0] || "").trim().toLowerCase();
 
-        return tagA.localeCompare(tagB);
+    // ① タグで比較
+    const tagCompare = tagA.localeCompare(tagB);
+
+    if (tagCompare !== 0) {
+        return tagCompare;
+    }
+
+    // ② 同じタグなら名前順
+    const nameA = (a.name || "").trim().toLowerCase();
+    const nameB = (b.name || "").trim().toLowerCase();
+
+    return nameA.localeCompare(nameB);
     });
 
     const start = (currentPage - 1) * pageSize;
