@@ -274,7 +274,7 @@ input{
   
 </style></head><body><h1>💎 宝石図鑑</h1><div class="form"><input id="photo" type="file" accept="image/*"><input id="name" placeholder="宝石名"><input id="tags" placeholder="タグ（カンマ区切り）"><button onclick="saveGem()">登録</button>
 
-</div><input id="search" placeholder="検索" oninput="resetPageAndRender()"><div id="gallery" class="grid"></div><!-- ページネーション操作部 --><div class="pagination"><button id="prevBtn" onclick="changePage(-1)">前へ</button><span id="pageInfo"></span><button id="nextBtn" onclick="changePage(1)">次へ</button></div><!-- 編集モーダル --><div id="modal" class="modal"><div class="modal-content"><h3>編集</h3><textarea id="editName"></textarea><input id="editTags" placeholder="タグ"><button onclick="saveEdit()">保存</button>
+</div><input id="search" placeholder="検索" oninput="resetPageAndRender()"><div id="gallery" class="grid"></div><div class="pagination"><button id="prevBtn" onclick="changePage(-1)">前へ</button><span id="pageInfo"></span><button id="nextBtn" onclick="changePage(1)">次へ</button></div><div id="modal" class="modal"><div class="modal-content"><h3>編集</h3><textarea id="editName"></textarea><input id="editTags" placeholder="タグ"><button onclick="saveEdit()">保存</button>
 
 <button onclick="closeEdit()">キャンセル</button>
 
@@ -340,7 +340,7 @@ function saveGem(){
   
 
   
-        localStorage.setItem("gems", JSON.stringify(gems));
+        localStorage.setItem("gems", JSON.stringify(gems)); // ここで保存処理を行っています
         resetPageAndRender();
   
     };
