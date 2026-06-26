@@ -204,9 +204,55 @@ function render(){
     const gallery = document.getElementById("gallery");
     gallery.innerHTML = "";
 
-    const start = (currentPage - 1) * pageSize;
-    const pageItems = gems.slice(start, start + pageSize);
+    // ① まずフィルターを作る（これがfiltered）
+    let filtered = gems;
 
+    // ② 検索（あれば）
+    const keyword = document.getElementById("search")?.value?.toLowerCase() || "";
+
+    if (keyword) {
+        filtered = filtered.filter(g =>
+            (g.name || "").toLowerCase().includes(keyword) ||
+            (g.tags || "").toLowerCase().includes(keyword)
+        );
+    }
+
+    // ③ ソート（ここでOK）
+    filtered.sort((a, b) => {
+
+        const tagsA = (a.tags || "")
+            .split(",")
+            .map(t => t.trim())
+            .filter(Boolean);
+
+        const tagsB = (b.tags || "")
+            .split(",")
+            .map(t => t.trim())
+            .filter(Boolean);
+
+        const a1 = (tagsA[0] || "").toLowerCase();
+        const b1 = (tagsB[0] || "").toLowerCase();
+
+        const first = a1.localeCompare(b1);
+        if (first !== 0) return first;
+
+        const a2 = (tagsA[1] || "").toLowerCase();
+        const b2 = (tagsB[1] || "").toLowerCase();
+
+        const second = a2.localeCompare(b2);
+        if (second !== 0) return second;
+
+        const nameA = (a.name || "").toLowerCase();
+        const nameB = (b.name || "").toLowerCase();
+
+        return nameA.localeCompare(nameB);
+    });
+
+    // ④ ページング
+    const start = (currentPage - 1) * pageSize;
+    const pageItems = filtered.slice(start, start + pageSize);
+
+    // ⑤ 描画
     pageItems.forEach(g => {
 
         gallery.innerHTML += `
@@ -222,22 +268,14 @@ function render(){
                 ${(g.tags || "")
                     .split(",")
                     .map(t => t.trim())
-                    .filter(t => t)
-                    .map(t =>
-                        `<span class="tag">#${t}</span>`
-                    ).join("")}
+                    .filter(Boolean)
+                    .map(t => `<span class="tag">#${t}</span>`)
+                    .join("")}
                 </div>
 
                 <div class="button-area">
-
-                    <button onclick="alert('編集機能追加予定')">
-                        編集
-                    </button>
-
-                    <button onclick="deleteGem(${g.id})">
-                        削除
-                    </button>
-
+                    <button onclick="openEdit(${g.id})">編集</button>
+                    <button onclick="deleteGem(${g.id})">削除</button>
                 </div>
 
             </div>
